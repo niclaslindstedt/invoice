@@ -1,0 +1,36 @@
+# Invoice
+
+> A local-first invoicing PWA built on @niclaslindstedt/oss-framework.
+> Register the company that sends the invoices and the customers that
+> receive them, write invoices against a template, rearrange the sections
+> of the page in an edit mode, and print or save the result as a PDF from
+> the device. One document, stored on-device in IndexedDB, with an optional
+> copy in a local folder or the user's own Dropbox. A companion to the Time
+> app: a range of hours exported there drops onto an invoice here as lines.
+
+- App: https://invoice.niclaslindstedt.se/
+- Source: https://github.com/niclaslindstedt/invoice
+- Framework: https://github.com/niclaslindstedt/oss-framework
+- Companion: https://github.com/niclaslindstedt/time
+
+## Features
+
+- Invoices: draft, send, mark paid, credit; a number series, due dates and
+  late-payment terms per region; lines with quantity, unit, price and VAT
+  rate; totals per VAT rate; a history of what happened to each invoice
+- Preview and edit mode: the invoice as it prints, and the same page with
+  every section movable (drag, or up/down), hideable, and editable in place
+- Sources: a customer's or the company's details edited from the invoice
+  update the record itself, and every change is kept as a revision you can
+  read back
+- Customers: name, address, references, region-specific identifiers such as
+  a Swedish organisation number, and the edit history of each
+- Company: who sends the invoice — identifiers, bank details, the notice a
+  region requires (Sweden's "Godkänd för F-skatt")
+- Templates: a typeface out of a bundled set, an accent, a paper, which
+  sections a new invoice starts with and in what order
+- Regions: one folder per region holding its rules, identifiers, VAT rates
+  and required sections; Sweden today, built so a second region is a folder
+- Drop a file exported from Time onto an invoice and its hours become lines
+- English and Swedish; light and dark theme
+- No account, no server, no analytics; installable and fully offline
