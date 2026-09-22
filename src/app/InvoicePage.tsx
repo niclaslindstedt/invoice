@@ -251,12 +251,18 @@ export function InvoicePage({
         );
       case "totals":
         return (
-          <div className="ml-auto w-full max-w-xs text-sm">
+          <div className="ml-auto w-full max-w-sm text-sm">
             <Row label={t("page.net")} value={money(totals.net)} />
             {totals.vat.map((g) => (
               <Row
                 key={g.rate}
-                label={`${t("page.vatAt", { rate: formatQuantity(g.rate, locale) })} ${t("page.vatOn", { base: money(g.net) })}`}
+                // With one rate the base is the net, printed a line up;
+                // only a second rate needs its own base named.
+                label={
+                  totals.vat.length > 1
+                    ? `${t("page.vatAt", { rate: formatQuantity(g.rate, locale) })} ${t("page.vatOn", { base: money(g.net) })}`
+                    : t("page.vatAt", { rate: formatQuantity(g.rate, locale) })
+                }
                 value={money(g.vat)}
               />
             ))}
@@ -268,7 +274,9 @@ export function InvoicePage({
               style={{ borderColor: "var(--page-accent)" }}
             >
               <span>{t("page.total")}</span>
-              <span className="tabular-nums">{money(totals.total)}</span>
+              <span className="shrink-0 whitespace-nowrap tabular-nums">
+                {money(totals.total)}
+              </span>
             </div>
             {invoice.currency !== region.currency &&
               (invoice.vatInBaseCurrency !== null || edits) && (
@@ -424,8 +432,10 @@ function addressLine(party: Party): string {
 function Row({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex items-baseline justify-between gap-4 py-0.5">
-      <span style={{ color: "var(--page-muted)" }}>{label}</span>
-      <span className="tabular-nums">{value}</span>
+      <span className="min-w-0" style={{ color: "var(--page-muted)" }}>
+        {label}
+      </span>
+      <span className="shrink-0 whitespace-nowrap tabular-nums">{value}</span>
     </div>
   );
 }
