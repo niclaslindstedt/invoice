@@ -1,0 +1,347 @@
+/* SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0 */
+
+/* App stylesheet.
+
+     1. Tailwind v4 base + utilities.
+     2. The framework's prebuilt stylesheet — the theme-token map, the button /
+        elevation flavours, and every preset palette.
+     3. `@source` — scan the installed framework package so the utility classes
+        its components use are emitted into this app's CSS.
+     4. App-shell layout: the html/body reset that makes this a full-viewport,
+        non-scrolling PWA, and the safe-area padding the bottom nav needs.
+     5. The page — the invoice as printed — and what happens when it is. */
+
+@import "tailwindcss";
+@import "@niclaslindstedt/oss-framework/styles.css";
+
+@source "../node_modules/@niclaslindstedt/oss-framework/dist";
+
+/* ── Corners ─────────────────────────────────────────────────────────────────
+   The theme engine writes `--radius-sm|md|lg` onto <html>; these continue
+   Tailwind's ramp above them so `rounded-xl` is never tighter than
+   `rounded-lg`. */
+@theme {
+  --radius: 0.625rem;
+  --radius-xs: 0.25rem;
+  --radius-xl: 1.5rem;
+  --radius-2xl: 1.75rem;
+  --radius-3xl: 2rem;
+}
+
+/* ── The wordmark ──────────────────────────────────────────────────────────── */
+.app-wordmark {
+  font-family:
+    "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 1.0625rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+/* ── Toasts ────────────────────────────────────────────────────────────────── */
+.app-toasts [data-kind="success"] {
+  border-color: color-mix(in oklab, var(--accent) 45%, transparent);
+  background-color: color-mix(in oklab, var(--accent) 12%, var(--surface-2));
+}
+
+.app-toasts [data-kind="success"] > span[aria-hidden="true"] {
+  background-color: var(--accent);
+}
+
+.app-toasts [data-kind="danger"] {
+  border-color: var(--danger);
+  background-color: color-mix(in oklab, var(--danger) 32%, var(--surface-2));
+}
+
+.app-toasts [data-kind="danger"] > span[aria-hidden="true"] {
+  background-color: var(--danger);
+}
+
+/* ── Pointer affordance ──────────────────────────────────────────────────────
+   Tailwind v4's preflight stopped restoring `cursor: pointer` on buttons. */
+button,
+summary,
+select,
+[role="button"],
+input[type="checkbox"],
+input[type="radio"],
+input[type="file"] {
+  cursor: pointer;
+}
+
+button:disabled,
+select:disabled,
+input:disabled,
+[aria-disabled="true"],
+[aria-disabled="true"] button {
+  cursor: not-allowed;
+}
+
+/* WebKit gives a native date field an intrinsic minimum width `width: 100%`
+   does not beat; turning the appearance off lets it be sized by its box. */
+input[type="date"] {
+  -webkit-appearance: none;
+  appearance: none;
+  min-width: 0;
+  max-width: 100%;
+}
+
+/* ── App shell ───────────────────────────────────────────────────────────────
+   The app fills the viewport and never scrolls as a document: the <main>
+   between the header and the bottom nav is the one scrolling region. */
+html,
+body {
+  height: 100%;
+  overscroll-behavior-y: none;
+}
+
+body {
+  margin: 0;
+  background: var(--page-bg);
+  color: var(--fg);
+  font-family: var(--app-font-family, system-ui, sans-serif);
+  -webkit-font-smoothing: antialiased;
+}
+
+#root {
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Installed iOS PWA edge-to-edge under the home indicator. */
+@supports (-webkit-touch-callout: none) {
+  @media (display-mode: standalone) {
+    html,
+    body,
+    #root {
+      height: 100vh;
+    }
+  }
+}
+
+.app-header {
+  padding-top: max(0.75rem, env(safe-area-inset-top));
+}
+
+.app-bottom-nav {
+  padding-bottom: 10px;
+}
+
+.app-bottom-nav button {
+  min-height: 3rem;
+}
+
+/* The update prompt sits above the bottom bar rather than over it. */
+.app-update-slot [data-toast-stack] {
+  position: absolute;
+  bottom: 0.75rem;
+}
+
+/* ── Moving between screens ────────────────────────────────────────────────── */
+.app-screen[data-enter="forward"] {
+  animation: screen-in-right 220ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.app-screen[data-enter="back"] {
+  animation: screen-in-left 220ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes screen-in-right {
+  from {
+    opacity: 0;
+    transform: translateX(1.5rem);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes screen-in-left {
+  from {
+    opacity: 0;
+    transform: translateX(-1.5rem);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app-screen[data-enter] {
+    animation: none;
+  }
+}
+
+/* ── The page ────────────────────────────────────────────────────────────────
+   The invoice as it prints. It has colours of its own — its paper, its ink,
+   its accent — set as variables by `InvoicePage.tsx` from `layout.ts`, and
+   none of them is the theme's: a white page is white on the dark theme,
+   because it is a document rather than a surface of the app.
+
+   An A4 sheet is 210 mm wide. On screen the page is as wide as the column
+   lets it be and keeps the sheet's proportions in its padding; in print it
+   is the sheet. */
+.invoice-page {
+  --page-ink: #1a1a1a;
+  --page-accent: #1a1a1a;
+  --page-paper: #ffffff;
+  --page-rule: color-mix(in srgb, var(--page-ink) 18%, transparent);
+  --page-muted: color-mix(in srgb, var(--page-ink) 62%, transparent);
+  background: var(--page-paper);
+  color: var(--page-ink);
+  font-family: var(--page-family);
+  font-size: 11pt;
+  line-height: 1.4;
+  /* Never narrower than a page can be laid out on: on a phone the sheet
+     scrolls sideways inside its wrapper rather than squeezing six columns
+     into three hundred pixels. */
+  width: 100%;
+  min-width: 40rem;
+  max-width: 210mm;
+  min-height: 297mm;
+  padding: 16mm 16mm 18mm;
+  box-sizing: border-box;
+  margin: 0 auto;
+  box-shadow:
+    0 1px 2px rgb(0 0 0 / 0.2),
+    0 12px 32px rgb(0 0 0 / 0.18);
+}
+
+.invoice-page h1,
+.invoice-page h2,
+.invoice-page h3 {
+  font-family: var(--page-heading);
+  color: var(--page-accent);
+  margin: 0;
+}
+
+/* A field edited in place on the page keeps the page's type: the input wears
+   no chrome of its own until it is focused, so the edit mode reads as the
+   page with a cursor in it. */
+.invoice-page .page-field {
+  font: inherit;
+  color: inherit;
+  background: transparent;
+  border: 0;
+  border-bottom: 1px dashed var(--page-rule);
+  padding: 0 0.1em;
+  margin: 0 -0.1em;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+/* As wide as its cell, unless the call site sized it (the numeric
+   columns). */
+.invoice-page .page-field:not(.w-14, .w-16, .w-24) {
+  width: 100%;
+  outline: none;
+  border-radius: 0;
+}
+
+.invoice-page .page-field:focus {
+  border-bottom-color: var(--page-accent);
+  background: color-mix(in srgb, var(--page-accent) 6%, transparent);
+}
+
+.invoice-page textarea.page-field {
+  resize: vertical;
+}
+
+.invoice-page .page-field::placeholder {
+  color: var(--page-muted);
+  opacity: 1;
+}
+
+/* ── Sections in the edit mode ──────────────────────────────────────────────
+   Each section is framed, with its handle and its buttons in the margin, so
+   the page itself is not pushed about by the chrome. */
+.section-frame {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+  outline: 1px dashed transparent;
+  outline-offset: 4px;
+  transition:
+    outline-color 120ms,
+    opacity 120ms;
+}
+
+.section-frame:hover,
+.section-frame:focus-within,
+.section-frame[data-dragging="true"] {
+  outline-color: var(--page-accent);
+}
+
+.section-frame[data-dragging="true"] {
+  opacity: 0.55;
+}
+
+.section-frame[data-drop="before"]::before,
+.section-frame[data-drop="after"]::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--page-accent);
+}
+
+.section-frame[data-drop="before"]::before {
+  top: -8px;
+}
+
+.section-frame[data-drop="after"]::after {
+  bottom: -8px;
+}
+
+/* ── Print ───────────────────────────────────────────────────────────────────
+   Only the page goes to the printer. Everything else in the document is
+   hidden rather than removed, so the page keeps its place in the tree and
+   its styles; the page itself is lifted to the top-left corner of the sheet
+   and takes the sheet's own margins from `@page`. */
+@page {
+  size: A4;
+  margin: 0;
+}
+
+@media print {
+  html,
+  body,
+  #root {
+    height: auto !important;
+    overflow: visible !important;
+    background: #fff !important;
+  }
+
+  body * {
+    visibility: hidden;
+  }
+
+  .invoice-page,
+  .invoice-page * {
+    visibility: visible;
+  }
+
+  .invoice-page {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 210mm;
+    max-width: none;
+    min-height: 297mm;
+    margin: 0;
+    box-shadow: none;
+  }
+
+  .section-frame {
+    outline: none !important;
+  }
+
+  .section-frame [data-section-chrome] {
+    display: none !important;
+  }
+}
