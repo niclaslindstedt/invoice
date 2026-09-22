@@ -54,6 +54,12 @@ export function fieldLabel(region: Region, lang: Lang, id: string): string {
   return region.strings[lang].fields[id] ?? id;
 }
 
+/** The region's line under a field — where the figure comes from, what an
+ *  empty one means. Empty when the field explains itself. */
+export function fieldHint(region: Region, lang: Lang, id: string): string {
+  return region.strings[lang].hints[id] ?? "";
+}
+
 /** The label of one of a `choice` field's values. */
 export function choiceLabel(
   region: Region,

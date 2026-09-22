@@ -18,8 +18,19 @@ const en: RegionStrings = {
     bic: "BIC",
     ocr: "OCR / payment reference",
     companyForm: "Company form",
+    lateInterestRate: "Late-payment interest (% per year)",
     lateFee: "Charge the 450 kr late fee (business customers)",
-    reminderFee: "Charge a 60 kr reminder fee",
+    reminderFee: "Charge a reminder fee",
+    reminderFeeAmount: "Reminder fee (kr)",
+  },
+  hints: {
+    lateInterestRate:
+      "Leave empty for the statutory rate — the Riksbank's reference rate plus 8 percentage points. Fill it in only where a different rate was agreed.",
+    lateFee:
+      "450 kr, fixed by the Interest Act (4 a §) and not yours to set. Owed by a business customer, without a reminder.",
+    reminderFee: "Only chargeable where the customer agreed to it beforehand.",
+    reminderFeeAmount:
+      "At most 60 kr, the statutory maximum. Empty charges the full 60 kr.",
   },
   choices: {
     companyForm: {
@@ -53,9 +64,11 @@ const en: RegionStrings = {
     fSkatt: "Godkänd för F-skatt",
     lateInterest:
       "Interest on late payment is charged under the Swedish Interest Act (the reference rate plus 8 percentage points)",
+    lateInterestAgreed:
+      "Interest on late payment is charged at {rate} % per year",
     lateFee:
-      "A late-payment fee of SEK 450 is charged on overdue invoices to businesses",
-    reminderFee: "A reminder fee of SEK 60 is charged per reminder",
+      "A late-payment fee of SEK {amount} is charged on overdue invoices to businesses",
+    reminderFee: "A reminder fee of SEK {amount} is charged per reminder",
     seat: "Registered office: {seat}",
     terms: "Payment terms: {days} days net",
     reverseCharge:
@@ -77,8 +90,19 @@ const sv: RegionStrings = {
     bic: "BIC",
     ocr: "OCR / betalningsreferens",
     companyForm: "Företagsform",
+    lateInterestRate: "Dröjsmålsränta (% per år)",
     lateFee: "Ta ut förseningsersättning 450 kr (näringsidkare)",
-    reminderFee: "Ta ut påminnelseavgift 60 kr",
+    reminderFee: "Ta ut påminnelseavgift",
+    reminderFeeAmount: "Påminnelseavgift (kr)",
+  },
+  hints: {
+    lateInterestRate:
+      "Tomt fält ger räntelagens ränta — referensräntan plus 8 procentenheter. Fyll i en räntesats bara om en annan är avtalad.",
+    lateFee:
+      "450 kr enligt räntelagen 4 a § — beloppet går inte att ändra. En näringsidkare är skyldig att betala det utan påminnelse.",
+    reminderFee: "Får bara tas ut om kunden har avtalat om den i förväg.",
+    reminderFeeAmount:
+      "Högst 60 kr enligt lagen om ersättning för inkassokostnader. Tomt fält ger hela 60 kr.",
   },
   choices: {
     companyForm: {
@@ -112,9 +136,10 @@ const sv: RegionStrings = {
     fSkatt: "Godkänd för F-skatt",
     lateInterest:
       "Dröjsmålsränta debiteras enligt räntelagen (referensräntan + 8 procentenheter)",
+    lateInterestAgreed: "Dröjsmålsränta debiteras med {rate} % per år",
     lateFee:
-      "Vid försenad betalning debiteras förseningsersättning 450 kr (näringsidkare)",
-    reminderFee: "Påminnelseavgift 60 kr debiteras per påminnelse",
+      "Vid försenad betalning debiteras förseningsersättning {amount} kr (näringsidkare)",
+    reminderFee: "Påminnelseavgift {amount} kr debiteras per påminnelse",
     seat: "Säte: {seat}",
     terms: "Betalningsvillkor: {days} dagar netto",
     reverseCharge: "Omvänd betalningsskyldighet",

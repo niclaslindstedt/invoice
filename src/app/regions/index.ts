@@ -33,13 +33,27 @@ export type RegionField = {
    *  payment block — a giro number is how to pay, not who is paying — or
    *  nowhere, for a fact the region needs but the page does not show. */
   placement: "party" | "payment" | "none";
-  /** A `yes` / `no` field, one of a fixed set of values, or free text. */
-  kind: "text" | "flag" | "choice";
+  /** A `yes` / `no` field, one of a fixed set of values, a number, or free
+   *  text. A `number` is a figure the region leaves to the seller — a fee the
+   *  law caps rather than fixes, an interest rate the parties may agree — so
+   *  the page never prints it as a detail of its own; what it means is said
+   *  by the region's notices. */
+  kind: "text" | "flag" | "choice" | "number";
   /** The values a `choice` field may take; labelled by the region's
    *  `choices` strings. */
   choices?: string[];
+  /** The range a `number` may take — usually the floor and the ceiling the
+   *  law leaves open. A typed figure is clamped to it, and a stored one
+   *  outside it is an issue. */
+  min?: number;
+  max?: number;
+  /** Only asked while this other field of the region's is set — the amount
+   *  of a fee nobody is charging is nobody's business. The value is kept
+   *  while it is hidden, so turning a fee off and on again does not lose the
+   *  figure that was typed. */
+  dependsOn?: string;
   /** The soft keyboard a phone should open for it. */
-  inputMode?: "text" | "numeric" | "email" | "url";
+  inputMode?: "text" | "numeric" | "decimal" | "email" | "url";
   /** Tidy a typed value into its canonical form (spacing, a dash). */
   normalize?: (value: string) => string;
   /** Whether a normalised value is well-formed. Absent means anything goes. */
@@ -97,6 +111,10 @@ export type Region = {
 export type RegionStrings = {
   name: string;
   fields: Record<string, string>;
+  /** The line under a field that says where its value comes from: which
+   *  figure the law fixes, which it only caps, and what an empty field
+   *  falls back to. Sparse — a field that explains itself has none. */
+  hints: Record<string, string>;
   /** The labels of a `choice` field's values, keyed by field id. */
   choices: Record<string, Record<string, string>>;
   issues: Record<string, string>;
@@ -129,6 +147,32 @@ export function fieldsFor(
   return region.fields.filter((f) => f.party === "both" || f.party === party);
 }
 
+/** Whether the form asks for a field at all: one that depends on another is
+ *  asked only once that other is set. */
+export function fieldAsked(
+  field: RegionField,
+  details: Record<string, string>,
+): boolean {
+  return !field.dependsOn || Boolean(details[field.dependsOn]);
+}
+
+/** A typed value in the form it is stored in: the field's own normaliser,
+ *  or — for a `number` — the figure read with either decimal mark, clamped
+ *  to the region's range, and given up on when it is not a number at all.
+ *  An empty field is never a zero: it is the figure left unset, and what
+ *  that means is the region's to say. */
+export function normalizeField(field: RegionField, value: string): string {
+  if (field.kind !== "number") {
+    return (field.normalize ?? ((v: string) => v.trim()))(value);
+  }
+  const typed = value.replace(/\s/g, "").replace(",", ".");
+  if (!typed) return "";
+  const figure = Number(typed);
+  if (!Number.isFinite(figure)) return "";
+  const floor = Math.max(field.min ?? figure, figure);
+  return String(Number(Math.min(field.max ?? floor, floor).toFixed(2)));
+}
+
 /** A party's details with every value tidied and every key the region does
  *  not define dropped — what a save and a read both run through. */
 export function normalizeDetails(
@@ -139,7 +183,7 @@ export function normalizeDetails(
   for (const field of region.fields) {
     const raw = details[field.id];
     if (typeof raw !== "string") continue;
-    const value = (field.normalize ?? ((v: string) => v.trim()))(raw);
+    const value = normalizeField(field, raw);
     if (!value) continue;
     if (field.kind === "choice" && !(field.choices ?? []).includes(value)) {
       continue;
@@ -158,9 +202,21 @@ export function fieldIssues(
 ): RegionIssue[] {
   const out: RegionIssue[] = [];
   for (const field of fieldsFor(region, party)) {
+    if (!fieldAsked(field, details)) continue;
     const value = details[field.id] ?? "";
     if (!value) {
       if (field.required) out.push({ key: "missing", party, field: field.id });
+      continue;
+    }
+    if (field.kind === "number") {
+      const figure = Number(value);
+      if (
+        !Number.isFinite(figure) ||
+        figure < (field.min ?? -Infinity) ||
+        figure > (field.max ?? Infinity)
+      ) {
+        out.push({ key: "invalid", party, field: field.id });
+      }
       continue;
     }
     if (field.validate && !field.validate(value)) {

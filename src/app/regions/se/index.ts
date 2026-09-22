@@ -31,9 +31,24 @@
 //
 // What the law does not require but every Swedish invoice carries: payment
 // terms ("30 dagar netto"), and the late-payment lines that only bind when
-// they are printed — interest under the Interest Act at the reference rate
-// plus eight points, the 450 kr late fee a business debtor owes without a
-// reminder, and the 60 kr reminder fee. See docs/regions.md for the sources.
+// they are printed. Those three are not one kind of figure, which is why one
+// of them is a switch and the other two are the seller's to set:
+//
+//   * **Dröjsmålsränta.** Räntelagen 6 § gives the reference rate plus eight
+//     points, but 1 § makes the whole Act yield to what the parties agreed —
+//     so an agreed rate governs and the field is a rate, empty meaning the
+//     Act's. (8 § voids a term that cuts the creditor's interest short when
+//     the debtor is a business, so a lower agreed rate binds a consumer and
+//     not a company; that is the seller's call to make, not the app's.)
+//   * **Förseningsersättning.** Räntelagen 4 a § sets it at 450 kronor
+//     flat — not a floor, not a ceiling, and not waivable against the
+//     creditor. There is nothing to configure, so it stays a switch.
+//   * **Påminnelseavgift.** Lagen (1981:739) om ersättning för
+//     inkassokostnader with förordning (1981:1057) allows *at most* 60
+//     kronor, and only where it was agreed in advance. A seller may ask for
+//     less, so it is an amount, capped at 60.
+//
+// See docs/regions.md for the sources.
 
 import { daysBetween } from "@niclaslindstedt/oss-framework/calendar";
 
@@ -130,6 +145,29 @@ export function validIban(value: string): boolean {
       remainder = (remainder * 10 + Number(digit)) % 97;
   }
   return remainder === 1;
+}
+
+/** Förseningsersättning: räntelagen 4 a §, a flat statutory amount. */
+export const LATE_FEE_SEK = 450;
+
+/** Påminnelseavgift: the most förordning (1981:1057) allows to be claimed. */
+export const REMINDER_FEE_MAX_SEK = 60;
+
+/** What the seller charges per reminder: what was set, or the statutory
+ *  maximum when the switch is on and no figure was given. */
+export function reminderFeeOf(details: Record<string, string>): number {
+  const n = Number(details.reminderFeeAmount);
+  return Number.isFinite(n) && details.reminderFeeAmount
+    ? n
+    : REMINDER_FEE_MAX_SEK;
+}
+
+/** A figure as the page prints it — the region's own locale, because the
+ *  document is a Swedish one whatever language its reader chose. */
+function figure(value: number): string {
+  return new Intl.NumberFormat(se.locale, {
+    maximumFractionDigits: 2,
+  }).format(value);
 }
 
 const VAT_RATES = [25, 12, 6, 0];
@@ -232,6 +270,20 @@ export const se: Region = {
       inputMode: "numeric",
     },
     {
+      // Räntelagen 6 § unless the parties agreed otherwise (1 §); empty is
+      // the Act's own rate, so the seller only fills this in when a contract
+      // says something else.
+      id: "lateInterestRate",
+      party: "seller",
+      required: false,
+      placement: "payment",
+      kind: "number",
+      min: 0,
+      max: 100,
+      inputMode: "decimal",
+    },
+    {
+      // 450 kr, fixed by räntelagen 4 a §: a switch, never an amount.
       id: "lateFee",
       party: "seller",
       required: false,
@@ -245,14 +297,39 @@ export const se: Region = {
       placement: "payment",
       kind: "flag",
     },
+    {
+      // Capped at 60 kr, so the seller may ask for less — but only once the
+      // fee is being charged at all.
+      id: "reminderFeeAmount",
+      party: "seller",
+      required: false,
+      placement: "payment",
+      kind: "number",
+      min: 0,
+      max: REMINDER_FEE_MAX_SEK,
+      dependsOn: "reminderFee",
+      inputMode: "decimal",
+    },
   ],
   notices: (seller) => {
     const out: RegionNotice[] = [];
     if (seller.details.fSkatt === "yes") out.push({ key: "fSkatt" });
     if (seller.details.seat) out.push({ key: "seat" });
-    out.push({ key: "lateInterest" });
-    if (seller.details.lateFee === "yes") out.push({ key: "lateFee" });
-    if (seller.details.reminderFee === "yes") out.push({ key: "reminderFee" });
+    const rate = seller.details.lateInterestRate;
+    out.push(
+      rate
+        ? { key: "lateInterestAgreed", params: { rate: figure(Number(rate)) } }
+        : { key: "lateInterest" },
+    );
+    if (seller.details.lateFee === "yes") {
+      out.push({ key: "lateFee", params: { amount: figure(LATE_FEE_SEK) } });
+    }
+    if (seller.details.reminderFee === "yes") {
+      out.push({
+        key: "reminderFee",
+        params: { amount: figure(reminderFeeOf(seller.details)) },
+      });
+    }
     return out;
   },
   invoiceNotices: (invoice) => {

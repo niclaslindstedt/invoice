@@ -2,15 +2,21 @@
 import { describe, expect, it } from "vitest";
 
 import { invoiceTotals } from "../src/app/invoice.ts";
+import { noticeLabel } from "../src/app/labels.ts";
 import {
   REGION_IDS,
   clampRegion,
+  fieldAsked,
   fieldIssues,
   fieldsFor,
   normalizeDetails,
+  normalizeField,
   regionOf,
 } from "../src/app/regions/index.ts";
 import {
+  LATE_FEE_SEK,
+  REMINDER_FEE_MAX_SEK,
+  reminderFeeOf,
   se,
   validBankgiro,
   validIban,
@@ -49,6 +55,7 @@ describe("the registry", () => {
         "fSkatt",
         "seat",
         "lateInterest",
+        "lateInterestAgreed",
         "lateFee",
         "reminderFee",
         "terms",
@@ -294,5 +301,152 @@ describe("the check", () => {
       companyForm: "ab",
     });
     expect(normalizeDetails(se, { companyForm: "plc" })).toEqual({});
+  });
+});
+
+describe("the late-payment lines", () => {
+  const seller = partyOf(company());
+  const charging = (details: Record<string, string>) => ({
+    ...seller,
+    details: { ...seller.details, ...details },
+  });
+
+  it("prints the Interest Act's rate until one is agreed", () => {
+    expect(se.notices(seller)).toContainEqual({ key: "lateInterest" });
+    expect(se.notices(charging({ lateInterestRate: "9.5" }))).toContainEqual({
+      key: "lateInterestAgreed",
+      params: { rate: "9,5" },
+    });
+    // One line about interest, never both.
+    const keys = se
+      .notices(charging({ lateInterestRate: "12" }))
+      .map((n) => n.key);
+    expect(keys).toContain("lateInterestAgreed");
+    expect(keys).not.toContain("lateInterest");
+  });
+
+  it("takes a rate typed with a comma and refuses one that is not a number", () => {
+    expect(normalizeDetails(se, { lateInterestRate: "9,5" })).toEqual({
+      lateInterestRate: "9.5",
+    });
+    expect(normalizeDetails(se, { lateInterestRate: "16 " })).toEqual({
+      lateInterestRate: "16",
+    });
+    expect(normalizeDetails(se, { lateInterestRate: "soon" })).toEqual({});
+    // An empty field is the statutory rate, not zero interest.
+    expect(normalizeDetails(se, { lateInterestRate: "" })).toEqual({});
+  });
+
+  it("keeps the late fee at the amount räntelagen 4 a § fixes", () => {
+    expect(se.notices(charging({ lateFee: "yes" }))).toContainEqual({
+      key: "lateFee",
+      params: { amount: "450" },
+    });
+    // No field sets it, in either direction.
+    expect(se.fields.find((f) => f.id === "lateFee")?.kind).toBe("flag");
+    expect(se.fields.map((f) => f.id)).not.toContain("lateFeeAmount");
+    // And the words quote the figure the constant holds.
+    for (const lang of ["en", "sv"] as const) {
+      expect(se.strings[lang].fields.lateFee).toContain(String(LATE_FEE_SEK));
+      expect(
+        noticeLabel(
+          se,
+          lang,
+          { key: "lateFee", params: { amount: String(LATE_FEE_SEK) } },
+          {},
+        ),
+      ).toContain(String(LATE_FEE_SEK));
+    }
+  });
+
+  it("charges the statutory maximum reminder fee unless a smaller one is set", () => {
+    expect(se.notices(charging({ reminderFee: "yes" }))).toContainEqual({
+      key: "reminderFee",
+      params: { amount: String(REMINDER_FEE_MAX_SEK) },
+    });
+    expect(
+      se.notices(charging({ reminderFee: "yes", reminderFeeAmount: "40" })),
+    ).toContainEqual({ key: "reminderFee", params: { amount: "40" } });
+    expect(
+      se.notices(charging({ reminderFee: "yes", reminderFeeAmount: "0" })),
+    ).toContainEqual({ key: "reminderFee", params: { amount: "0" } });
+    expect(reminderFeeOf({})).toBe(REMINDER_FEE_MAX_SEK);
+    expect(reminderFeeOf({ reminderFeeAmount: "40" })).toBe(40);
+    expect(reminderFeeOf({ reminderFeeAmount: "0" })).toBe(0);
+  });
+
+  it("reads a figure the way the form commits it", () => {
+    // `<input type="number">` throws a comma away, so the field is text and
+    // the region does the reading — the same function a stored document
+    // goes through.
+    const rate = se.fields.find((f) => f.id === "lateInterestRate")!;
+    const amount = se.fields.find((f) => f.id === "reminderFeeAmount")!;
+    expect(normalizeField(rate, "9,5")).toBe("9.5");
+    expect(normalizeField(rate, " 12 ")).toBe("12");
+    expect(normalizeField(rate, "200")).toBe("100");
+    expect(normalizeField(rate, "")).toBe("");
+    expect(normalizeField(rate, "later")).toBe("");
+    expect(normalizeField(amount, "95")).toBe("60");
+    expect(normalizeField(amount, "39,50")).toBe("39.5");
+  });
+
+  it("clamps a reminder fee to what the law allows to be claimed", () => {
+    expect(
+      normalizeDetails(se, { reminderFee: "yes", reminderFeeAmount: "80" }),
+    ).toEqual({ reminderFee: "yes", reminderFeeAmount: "60" });
+    expect(normalizeDetails(se, { reminderFeeAmount: "-5" })).toEqual({
+      reminderFeeAmount: "0",
+    });
+  });
+
+  it("asks the amount only while the fee is being charged", () => {
+    const amount = se.fields.find((f) => f.id === "reminderFeeAmount");
+    expect(amount?.dependsOn).toBe("reminderFee");
+    expect(fieldAsked(amount!, {})).toBe(false);
+    expect(fieldAsked(amount!, { reminderFee: "yes" })).toBe(true);
+    // A figure left behind by a fee that was turned off is not an issue.
+    const identifiers = {
+      orgNumber: "556036-0793",
+      vatNumber: "SE556036079301",
+    };
+    expect(
+      fieldIssues(se, "seller", { ...identifiers, reminderFeeAmount: "99" }),
+    ).toEqual([]);
+    expect(
+      fieldIssues(se, "seller", {
+        ...identifiers,
+        reminderFee: "yes",
+        reminderFeeAmount: "99",
+      }),
+    ).toEqual([
+      { key: "invalid", party: "seller", field: "reminderFeeAmount" },
+    ]);
+  });
+
+  it("says the configured figures in both languages", () => {
+    const details = charging({
+      lateInterestRate: "9.5",
+      reminderFee: "yes",
+      reminderFeeAmount: "40",
+    }).details;
+    const lines = (lang: "en" | "sv") =>
+      se
+        .notices(charging(details))
+        .map((n) => noticeLabel(se, lang, n, details))
+        .join("\n");
+    expect(lines("en")).toContain("9,5 % per year");
+    expect(lines("en")).toContain("SEK 40");
+    expect(lines("sv")).toContain("9,5 % per år");
+    expect(lines("sv")).toContain("Påminnelseavgift 40 kr");
+  });
+
+  it("is never printed as a payment detail of its own", () => {
+    // The page prints the seller's `text` payment fields as rows; a figure
+    // that only shapes a notice is a `number` and stays out of them.
+    const printed = fieldsFor(se, "seller")
+      .filter((f) => f.placement === "payment" && f.kind === "text")
+      .map((f) => f.id);
+    expect(printed).not.toContain("lateInterestRate");
+    expect(printed).not.toContain("reminderFeeAmount");
   });
 });
