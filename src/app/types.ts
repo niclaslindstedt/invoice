@@ -17,7 +17,7 @@
 import type { DayKey } from "@niclaslindstedt/oss-framework/calendar";
 
 import type { RegionId } from "./regions/index.ts";
-import type { Revision } from "./revisions.ts";
+import type { Revision } from "@niclaslindstedt/oss-framework/revisions";
 
 /** A postal address, one field a line. `country` is free text: it is
  *  printed, never parsed. */

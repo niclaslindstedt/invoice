@@ -16,7 +16,7 @@
 //
 // Pure and total: same inputs, same output, no clock, no storage.
 
-import { mergeRevisions } from "./revisions.ts";
+import { mergeRevisions } from "@niclaslindstedt/oss-framework/revisions";
 import { DOC_VERSION, type AppData } from "./types.ts";
 
 function newer<T extends { updatedAt: string }>(a: T, b: T): T {

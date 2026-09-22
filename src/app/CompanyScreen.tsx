@@ -21,7 +21,7 @@ import {
   regionOf,
   type RegionId,
 } from "./regions/index.ts";
-import { sameRecord } from "./revisions.ts";
+import { sameRecord } from "@niclaslindstedt/oss-framework/revisions";
 import {
   COMPANY_KEY,
   emptyParty,

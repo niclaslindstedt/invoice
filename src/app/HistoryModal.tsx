@@ -6,7 +6,10 @@ import { Button, Modal } from "@niclaslindstedt/oss-framework/components";
 import { useLang, useT } from "./i18n/index.ts";
 import { fieldLabel, formatMoment } from "./labels.ts";
 import type { Region } from "./regions/index.ts";
-import { changedPaths, type Revision } from "./revisions.ts";
+import {
+  changedPaths,
+  type Revision,
+} from "@niclaslindstedt/oss-framework/revisions";
 import { ModalHeader } from "./ModalHeader.tsx";
 import type { Party } from "./types.ts";
 

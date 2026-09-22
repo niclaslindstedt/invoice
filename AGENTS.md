@@ -152,11 +152,10 @@ like SVG's `focusable` as `"false"` rather than a JSX boolean.
   put back), `moveSection`, `hideSection`, `showSection`. Built on the
   framework's `order` module, which owns what a stored arrangement means when
   the set of sections and the stored list disagree. Pure.
-- `src/app/revisions.ts` — the edit history of a record as whole snapshots:
-  `recordRevision` (skips a save that changed nothing), `revisionAt` (what a
-  customer's address was in March), `mergeRevisions` (a union by timestamp),
-  `changedPaths`. Pure, and written to move to the framework: nothing in it
-  knows what a party is.
+- A party's edit history is the framework's `revisions` module
+  (`recordRevision`, `revisionAt`, `mergeRevisions`, `changedPaths`): whole
+  snapshots, a save that changed nothing skipped, two devices' lists merged
+  as a union. The store records one on every company or customer save.
 - `src/app/interchange.ts` — the file the Time app writes and this app reads:
   `invoice-lines`, versioned, lines of what was done and how much of it, and
   no money at all. `parseInvoiceLinesFile` validates and names what is wrong;
@@ -266,7 +265,7 @@ fields and its issues. A second region is a folder, a `RegionId`, a row in
 
 Tests live in `tests/` with a `_test` suffix (OSS_SPEC §20.2) and run under
 Vitest in the `node` environment — they cover the pure domain modules
-(`invoice`, `layout`, `revisions`, `interchange`, `migrations`, `merge`,
+(`invoice`, `layout`, `interchange`, `migrations`, `merge`,
 `regions/se`, the settings parser), which is where the app's real logic is. No
 DOM, no testing-library, no mocked clock. `tests/fixtures/helpers.ts` holds
 the shared fixtures (a company that passes Sweden's checks, a customer, an
@@ -300,19 +299,19 @@ with `[Learn more](feature:<slug>)`.
 
 ## Documentation sync points
 
-| If you change…                      | Update…                                                                                                         |
-| ----------------------------------- | --------------------------------------------------------------------------------------------------------------- |
-| `invoice.ts`                        | `docs/invoice-model.md`, `docs/features/invoices.md`, and the README's Examples block if the output shape moved |
-| A region, or `regions/index.ts`     | `docs/regions.md`, `docs/features/company.md`                                                                   |
-| `layout.ts` or the editor           | `docs/features/editor.md` and the README's Usage table                                                          |
-| `revisions.ts`                      | `docs/features/customers.md`, `docs/invoice-model.md` (the history section)                                     |
-| `interchange.ts`                    | `docs/interchange.md` — and the Time app's export, which writes what this reads                                 |
-| The `Invoice`, `Party` or doc shape | `docs/architecture.md`'s data shape and a `migrations.ts` step                                                  |
-| The sync engine or the merge        | `docs/sync.md`, `docs/features/storage.md`                                                                      |
-| A `VITE_*` variable                 | `docs/configuration.md`, `src/vite-env.d.ts`, the README's Configuration table, and the workflows that pass it  |
-| A screen's behaviour                | The matching `docs/features/*.md` and the README's Usage table                                                  |
-| Module layout                       | The "Where new code goes" table above and `docs/architecture.md`                                                |
-| A make target or script             | `CONTRIBUTING.md`, the README's Quick start, and this file's command list                                       |
+| If you change…                                | Update…                                                                                                         |
+| --------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| `invoice.ts`                                  | `docs/invoice-model.md`, `docs/features/invoices.md`, and the README's Examples block if the output shape moved |
+| A region, or `regions/index.ts`               | `docs/regions.md`, `docs/features/company.md`                                                                   |
+| `layout.ts` or the editor                     | `docs/features/editor.md` and the README's Usage table                                                          |
+| How a revision is recorded (`useDocStore.ts`) | `docs/features/customers.md`, `docs/invoice-model.md` (the history section)                                     |
+| `interchange.ts`                              | `docs/interchange.md` — and the Time app's export, which writes what this reads                                 |
+| The `Invoice`, `Party` or doc shape           | `docs/architecture.md`'s data shape and a `migrations.ts` step                                                  |
+| The sync engine or the merge                  | `docs/sync.md`, `docs/features/storage.md`                                                                      |
+| A `VITE_*` variable                           | `docs/configuration.md`, `src/vite-env.d.ts`, the README's Configuration table, and the workflows that pass it  |
+| A screen's behaviour                          | The matching `docs/features/*.md` and the README's Usage table                                                  |
+| Module layout                                 | The "Where new code goes" table above and `docs/architecture.md`                                                |
+| A make target or script                       | `CONTRIBUTING.md`, the README's Quick start, and this file's command list                                       |
 
 ## Parity and cross-cutting rules
 

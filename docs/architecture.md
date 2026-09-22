@@ -24,7 +24,6 @@ src/app/
     se/               Sweden: identifiers, rates, notices, the check, its strings
   invoice.ts        the arithmetic and the edits: totals, VAT groups, rounding, the number series, send, statuses, credit (pure, clock-free)
   layout.ts         the sections, the typefaces / accents / papers, and the moves (pure)
-  revisions.ts      the edit history of a record, as snapshots (pure)
   interchange.ts    the invoice-lines file the Time app writes (pure)
   merge.ts          two documents → one, revisions as a union (pure)
   migrations.ts     bytes ⇄ AppData, with validation
@@ -84,5 +83,5 @@ on the toast's "Reload". The cache is named from the deploy base
 
 Screens → stores → framework. Nothing imports from the framework's internals,
 only its published subpaths (`components`, `hooks`, `storage`, `sync`, `i18n`,
-`calendar`, `order`, `files`, `logging`, `pwa`, `theme`). The app runs on
+`calendar`, `order`, `revisions`, `files`, `logging`, `pwa`, `theme`). The app runs on
 Preact through `preact/compat` — see `AGENTS.md`.

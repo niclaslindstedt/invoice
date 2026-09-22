@@ -53,7 +53,8 @@ their quantities negated and points back at it.
 ## Revisions
 
 Saving the company or a customer appends a snapshot of its party details to
-its history — unless nothing changed. A snapshot is the whole record, so what
+its history — unless nothing changed — through the framework's `revisions`
+module. A snapshot is the whole record, so what
 a customer's address was on a given date is a lookup. The history modal lists
 every version, what changed from the one before, and restores one as a new
 version, so the history goes on being the whole story. Two devices' histories

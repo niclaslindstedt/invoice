@@ -14,7 +14,7 @@ import { createMigrator } from "@niclaslindstedt/oss-framework/storage";
 
 import { clampLayout } from "./layout.ts";
 import { clampRegion, normalizeDetails, regionOf } from "./regions/index.ts";
-import type { Revision } from "./revisions.ts";
+import type { Revision } from "@niclaslindstedt/oss-framework/revisions";
 import {
   DOC_VERSION,
   INVOICE_STATUSES,

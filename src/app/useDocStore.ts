@@ -5,7 +5,7 @@ import { createIdbStore } from "@niclaslindstedt/oss-framework/storage";
 
 import { parseDoc, serializeDoc } from "./migrations.ts";
 import { normalizeDetails, regionOf } from "./regions/index.ts";
-import { recordRevision } from "./revisions.ts";
+import { recordRevision } from "@niclaslindstedt/oss-framework/revisions";
 import {
   COMPANY_KEY,
   emptyDoc,
