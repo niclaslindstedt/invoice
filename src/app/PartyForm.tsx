@@ -7,8 +7,14 @@ import {
 } from "@niclaslindstedt/oss-framework/components";
 
 import { useLang, useT } from "./i18n/index.ts";
-import { choiceLabel, fieldLabel } from "./labels.ts";
-import { fieldsFor, type Region, type RegionField } from "./regions/index.ts";
+import { choiceLabel, fieldHint, fieldLabel } from "./labels.ts";
+import {
+  fieldAsked,
+  fieldsFor,
+  normalizeField,
+  type Region,
+  type RegionField,
+} from "./regions/index.ts";
 import type { Party } from "./types.ts";
 
 // The form for what the company and a customer have in common: the name,
@@ -16,10 +22,17 @@ import type { Party } from "./types.ts";
 // side. One form for both, so an organisation number is asked for the same
 // way whoever it belongs to.
 //
-// The region's fields are drawn from its table: a `flag` is a toggle, and
-// everything else a text field with the keyboard the region asked for. A
-// value the region cannot validate is marked, never refused — a form that
-// will not take a number until it is perfect is a form nobody finishes.
+// The region's fields are drawn from its table: a `flag` is a toggle, a
+// `choice` a picker, and everything else a text field with the keyboard the
+// region asked for. A value the region cannot validate is marked, never
+// refused — a form that will not take a number until it is perfect is a form
+// nobody finishes. A field the region hangs off another (the amount of a fee
+// that is not being charged) is left out until that one is set.
+//
+// A `number` is a text field too, deliberately: `<input type="number">`
+// throws away a value with a comma in it, and a comma is how a Swedish
+// keypad writes a decimal point. The region reads either mark and clamps the
+// figure to its range when the field is committed.
 
 type Props = {
   party: Party;
@@ -57,8 +70,10 @@ export function PartyForm({
   };
   // A field the page never prints (`none`) is asked for with the party's
   // own details.
-  const fields = fieldsFor(region, side).filter((f) =>
-    placements.includes(f.placement === "none" ? "party" : f.placement),
+  const fields = fieldsFor(region, side).filter(
+    (f) =>
+      placements.includes(f.placement === "none" ? "party" : f.placement) &&
+      fieldAsked(f, party.details),
   );
 
   return (
@@ -128,55 +143,67 @@ export function PartyForm({
           />
         </>
       )}
-      {fields.map((field) =>
-        field.kind === "choice" ? (
-          <Field key={field.id} label={fieldLabel(region, lang, field.id)}>
-            <SelectPicker<string>
-              value={party.details[field.id] ?? ""}
-              options={[
-                { value: "", label: "—" },
-                ...(field.choices ?? []).map((value) => ({
-                  value,
-                  label: choiceLabel(region, lang, field.id, value),
-                })),
-              ]}
-              onChange={(v: string) => setDetail(field.id, v)}
-              ariaLabel={fieldLabel(region, lang, field.id)}
+      {fields.map((field) => {
+        const label = fieldLabel(region, lang, field.id);
+        const hint = fieldHint(region, lang, field.id);
+        const commit = (v: string) =>
+          setDetail(field.id, normalizeField(field, v));
+        if (field.kind === "flag") {
+          return (
+            <ToggleRow
+              key={field.id}
+              label={label}
+              hint={hint || undefined}
+              checked={party.details[field.id] === "yes"}
+              onChange={(next) => setDetail(field.id, next ? "yes" : "")}
             />
-          </Field>
-        ) : field.kind === "flag" ? (
-          <ToggleRow
-            key={field.id}
-            label={fieldLabel(region, lang, field.id)}
-            checked={party.details[field.id] === "yes"}
-            onChange={(next) => setDetail(field.id, next ? "yes" : "")}
-          />
-        ) : (
-          <LabeledInput
-            key={field.id}
-            label={fieldLabel(region, lang, field.id)}
-            value={party.details[field.id] ?? ""}
-            required={field.required}
-            invalid={Boolean(
-              party.details[field.id] &&
-              field.validate &&
-              !field.validate(
-                (field.normalize ?? ((v: string) => v))(
-                  party.details[field.id] ?? "",
-                ),
-              ),
+          );
+        }
+        const value = party.details[field.id] ?? "";
+        return (
+          <div key={field.id} className="flex flex-col gap-1">
+            {field.kind === "choice" ? (
+              <Field label={label}>
+                <SelectPicker<string>
+                  value={value}
+                  options={[
+                    { value: "", label: "—" },
+                    ...(field.choices ?? []).map((v) => ({
+                      value: v,
+                      label: choiceLabel(region, lang, field.id, v),
+                    })),
+                  ]}
+                  onChange={(v: string) => setDetail(field.id, v)}
+                  ariaLabel={label}
+                />
+              </Field>
+            ) : (
+              <LabeledInput
+                // The field keeps a draft of what was typed and seeds it once,
+                // so a commit the region rewrote — a giro number given its
+                // dash, a fee clamped to what the law allows — would otherwise
+                // go on showing the raw text while the page prints the tidied
+                // value. Keying on the stored value re-seeds the draft; the
+                // field has already been left by then, so nothing is
+                // interrupted.
+                key={value}
+                label={label}
+                value={value}
+                required={field.required}
+                invalid={Boolean(
+                  value &&
+                  field.validate &&
+                  !field.validate(normalizeField(field, value)),
+                )}
+                inputMode={field.inputMode}
+                autoCapitalize={field.kind === "number" ? "none" : "characters"}
+                onCommit={commit}
+              />
             )}
-            inputMode={field.inputMode}
-            autoCapitalize="characters"
-            onCommit={(v) =>
-              setDetail(
-                field.id,
-                (field.normalize ?? ((x: string) => x.trim()))(v),
-              )
-            }
-          />
-        ),
-      )}
+            {hint && <p className="text-xs text-muted">{hint}</p>}
+          </div>
+        );
+      })}
     </div>
   );
 }

@@ -7,7 +7,7 @@ import { useLang, useT } from "./i18n/index.ts";
 import { formatMoney, formatQuantity, invoiceTotals } from "./invoice.ts";
 import { fieldLabel, formatDate, noticeLabel, unitLabel } from "./labels.ts";
 import { ACCENT, PAPER, TYPEFACE } from "./layout.ts";
-import { fieldsFor, type Region } from "./regions/index.ts";
+import { fieldsFor, normalizeField, type Region } from "./regions/index.ts";
 import type {
   Customer,
   Invoice,
@@ -348,9 +348,7 @@ export function InvoicePage({
                         edits
                           ? (v) => {
                               const details = { ...seller.details };
-                              const next = (
-                                f.normalize ?? ((x: string) => x.trim())
-                              )(v);
+                              const next = normalizeField(f, v);
                               if (next) details[f.id] = next;
                               else delete details[f.id];
                               edits.seller({ ...seller, details });

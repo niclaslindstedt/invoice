@@ -11,8 +11,11 @@ A region answers:
 - **Fields** — the identifiers a party carries, stored in `Party.details`
   under the field's id: who carries it (seller, buyer, both), whether it is
   required, where the page prints it (with the name, in the payment block, or
-  nowhere), a normaliser and a validator. A field is free text, a flag, or a
-  choice from a fixed set.
+  nowhere), a normaliser and a validator. A field is free text, a flag, a
+  choice from a fixed set, or a number — a figure the seller sets within the
+  range the region allows, which the page never prints as a detail of its own
+  because a notice says what it means. A field may hang off another
+  (`dependsOn`), and is then asked only once that one is set.
 - **Required sections** — what the page may not go without.
 - **Rates, currency, locale, due term, rounding.**
 - **Notices** — the lines the page prints that nobody typed: the seller's
@@ -56,13 +59,21 @@ withholding tax) and is paid by **bankgiro** or **plusgiro**, so one of those
 ### What custom adds
 
 Payment terms are not in the VAT Act, but every template carries them:
-"Betalningsvillkor: 30 dagar netto" beside the due date. Late interest under
-the Interest Act (_räntelagen_) may only be charged from thirty days after
-the invoice unless agreed otherwise, at the reference rate plus eight
-percentage points, and public bodies may not demand longer terms. The 450 kr
-late-payment fee (_förseningsersättning_) a business debtor owes without a
-reminder, and the 60 kr reminder fee (_påminnelseavgift_), can only be charged
-if the invoice says so — hence two switches on the company that add the lines.
+"Betalningsvillkor: 30 dagar netto" beside the due date. The three
+late-payment lines that follow can only be charged if the invoice says so, so
+each of them is the company's to turn on — but only two of the three are the
+company's to set an amount for, and the difference is the law's:
+
+| Line                                      | The law                                                                                                                                                                                                                         | On the company form                                                |
+| ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
+| Late interest (_dröjsmålsränta_)          | The Interest Act's rate is the reference rate plus eight percentage points, but the Act yields to what the parties agreed (1 §, 6 §); it runs from thirty days after the invoice, and a public body may not demand longer terms | a rate in per cent — **empty is the statutory one**                |
+| Late-payment fee (_förseningsersättning_) | 450 kr flat, räntelagen 4 a §, owed by a business debtor without a reminder and not waivable against the creditor                                                                                                               | a switch, nothing more — **the amount is not the seller's to set** |
+| Reminder fee (_påminnelseavgift_)         | At most 60 kr (lagen 1981:739 with förordning 1981:1057), and only where it was agreed in advance                                                                                                                               | a switch and an amount, **capped at 60 kr**; empty charges 60      |
+
+A term that cuts the creditor's interest short is void against a business
+debtor (räntelagen 8 §), so a rate below the statutory one binds a consumer
+and not a company. That is the seller's call, and the app does not refuse
+it — it only says, under the field, where the figure comes from.
 
 Templates from the Swedish bookkeeping vendors agree on a shape: the company
 top left, "FAKTURA" and the number top right, a right-aligned block of dates,
@@ -71,20 +82,22 @@ the payment details and the legal lines at the foot.
 
 ### The fields
 
-| Field         | Who    | Required                           | Check                                                                                                |
-| ------------- | ------ | ---------------------------------- | ---------------------------------------------------------------------------------------------------- |
-| `orgNumber`   | both   | seller                             | ten digits, Luhn, printed `XXXXXX-XXXX`; a personal number's century is dropped                      |
-| `vatNumber`   | both   | seller; buyer under reverse charge | `SE` + the organisation number + `01`; derived when the number alone is typed                        |
-| `companyForm` | seller | no                                 | limited company, sole trader, partnership, other — not printed; decides whether the seat is required |
-| `seat`        | seller | for a limited company              | free text; printed as "Säte: …"                                                                      |
-| `fSkatt`      | seller | no                                 | a flag; prints "Godkänd för F-skatt"                                                                 |
-| `bankgiro`    | seller | no                                 | 7–8 digits, Luhn, printed `XXX(X)-XXXX`                                                              |
-| `plusgiro`    | seller | no                                 | 2–8 digits, Luhn, dash before the check digit                                                        |
-| `iban`        | seller | no                                 | mod-97, grouped in fours                                                                             |
-| `bic`         | seller | no                                 | 8 or 11 characters                                                                                   |
-| `ocr`         | seller | no                                 | free text                                                                                            |
-| `lateFee`     | seller | no                                 | a flag; prints the 450 kr late-fee line                                                              |
-| `reminderFee` | seller | no                                 | a flag; prints the 60 kr reminder-fee line                                                           |
+| Field               | Who    | Required                           | Check                                                                                                |
+| ------------------- | ------ | ---------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| `orgNumber`         | both   | seller                             | ten digits, Luhn, printed `XXXXXX-XXXX`; a personal number's century is dropped                      |
+| `vatNumber`         | both   | seller; buyer under reverse charge | `SE` + the organisation number + `01`; derived when the number alone is typed                        |
+| `companyForm`       | seller | no                                 | limited company, sole trader, partnership, other — not printed; decides whether the seat is required |
+| `seat`              | seller | for a limited company              | free text; printed as "Säte: …"                                                                      |
+| `fSkatt`            | seller | no                                 | a flag; prints "Godkänd för F-skatt"                                                                 |
+| `bankgiro`          | seller | no                                 | 7–8 digits, Luhn, printed `XXX(X)-XXXX`                                                              |
+| `plusgiro`          | seller | no                                 | 2–8 digits, Luhn, dash before the check digit                                                        |
+| `iban`              | seller | no                                 | mod-97, grouped in fours                                                                             |
+| `bic`               | seller | no                                 | 8 or 11 characters                                                                                   |
+| `ocr`               | seller | no                                 | free text                                                                                            |
+| `lateInterestRate`  | seller | no                                 | a number, 0–100 %, a comma or a dot; empty prints the Interest Act's rate instead of an agreed one   |
+| `lateFee`           | seller | no                                 | a flag; prints the 450 kr late-fee line, an amount räntelagen 4 a § fixes                            |
+| `reminderFee`       | seller | no                                 | a flag; prints the reminder-fee line                                                                 |
+| `reminderFeeAmount` | seller | no                                 | a number, asked only while `reminderFee` is on, clamped to the statutory 60 kr; empty charges 60     |
 
 ### The check
 
@@ -128,6 +141,9 @@ default. Due in 30 days by default.
 - [Kreditfaktura — Fakturamallen](https://fakturamallen.se/guider/kreditfaktura)
 - [Betalningsvillkor på faktura — Finansia](https://www.finansia.se/betalningsvillkor-pa-faktura/)
 - [Dröjsmålsränta och förseningsersättning — Björn Lundén](https://bjornlunden.com/se/bjornkoll/blogg/drojsmalsranta-och-forseningsersattning/)
+- [Räntelag (1975:635) — Riksdagen](https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/rantelag-1975635_sfs-1975-635/)
+- [Lag (1981:739) om ersättning för inkassokostnader m.m. — Riksdagen](https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/lag-1981739-om-ersattning-for-inkassokostnader_sfs-1981-739/)
+- [Förordning (1981:1057) om ersättning för inkassokostnader m.m. — Riksdagen](https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/forordning-19811057-om-ersattning-for_sfs-1981-1057/)
 - [För enskild firma är organisationsnummer ditt personnummer — Zervant](https://www.zervant.com/sv/blogg/for-enskild-firma-ar-organisationsnummer-ditt-personnummer/)
 - [Lag, förordning och föreskrifter inom e-handel för leverantörer till offentlig sektor — Digg](https://www.digg.se/kunskap-och-stod/e-handel/lag-forordning-och-foreskrifter-for-e-handel/lag-forordning-och-foreskrifter-inom-e-handel-for-leverantorer-till-offentlig-sektor)
 - [Peppol BIS Billing 3 — SFTI](https://sfti.se/sfti/standarder/peppolbisehandel/peppolbisbilling3.49021.html)
