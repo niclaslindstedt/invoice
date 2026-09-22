@@ -54,6 +54,16 @@ export function fieldLabel(region: Region, lang: Lang, id: string): string {
   return region.strings[lang].fields[id] ?? id;
 }
 
+/** The label of one of a `choice` field's values. */
+export function choiceLabel(
+  region: Region,
+  lang: Lang,
+  field: string,
+  value: string,
+): string {
+  return region.strings[lang].choices[field]?.[value] ?? value;
+}
+
 export function regionName(region: Region, lang: Lang): string {
   return region.strings[lang].name;
 }
@@ -79,5 +89,8 @@ export function noticeLabel(
   details: Record<string, string>,
 ): string {
   const template = region.strings[lang].notices[notice.key] ?? notice.key;
-  return template.replace(/\{(\w+)\}/g, (_, key: string) => details[key] ?? "");
+  return template.replace(
+    /\{(\w+)\}/g,
+    (_, key: string) => notice.params?.[key] ?? details[key] ?? "",
+  );
 }

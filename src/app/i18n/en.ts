@@ -136,6 +136,14 @@ export const en = {
     currency: "Currency",
     roundTotal: "Round the total to a whole unit",
     roundTotalHint: "The difference is printed as its own line.",
+    vatTreatment: "VAT",
+    vatTreatments: {
+      standard: "Charged",
+      reverseCharge: "Reverse charge",
+      exempt: "Exempt",
+    },
+    vatTreatmentHint:
+      "Reverse charge for building services between VAT-registered companies and for services to businesses abroad: the buyer's VAT number goes on the invoice and every line is at 0 %.",
     lines: "Lines",
     addLine: "Add line",
     removeLine: "Remove line",
@@ -207,6 +215,7 @@ export const en = {
     vatAt: "VAT {rate}%",
     vatOn: "on {base}",
     rounding: "Rounding",
+    vatInCurrency: "VAT in {currency}",
     total: "To pay",
     payment: "Payment",
     payBy: "Please pay {total} by {date}.",

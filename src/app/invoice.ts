@@ -163,6 +163,8 @@ export function newInvoice(
     buyer: null,
     creditOf: null,
     roundTotal: template?.roundTotal ?? true,
+    vatTreatment: "standard",
+    vatInBaseCurrency: null,
     updatedAt: ctx.now,
   };
 }
@@ -248,6 +250,8 @@ export function creditInvoice(
     creditOf: original.id,
     seller: null,
     buyer: null,
+    vatInBaseCurrency:
+      original.vatInBaseCurrency === null ? null : -original.vatInBaseCurrency,
     updatedAt: ctx.now,
   };
   return {

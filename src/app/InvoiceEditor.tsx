@@ -53,6 +53,7 @@ import { hiddenSections } from "./layout.ts";
 import type { Region } from "./regions/index.ts";
 import { SectionFrame } from "./SectionFrame.tsx";
 import {
+  VAT_TREATMENTS,
   customerList,
   partyOf,
   templateList,
@@ -60,6 +61,7 @@ import {
   type InvoiceLine,
   type Party,
   type SectionId,
+  type VatTreatment,
 } from "./types.ts";
 import type { DocStore } from "./useDocStore.ts";
 import { useDragReorder } from "./useDragReorder.ts";
@@ -487,6 +489,29 @@ export function InvoiceEditor({
                 />
               </Field>
             </div>
+            <Field label={t("editor.vatTreatment")}>
+              <SegmentedControl<VatTreatment>
+                value={invoice.vatTreatment}
+                options={VAT_TREATMENTS.map((v) => ({
+                  value: v,
+                  label: t(
+                    `editor.vatTreatments.${v}` as "editor.vatTreatments.standard",
+                  ),
+                }))}
+                onChange={(vatTreatment) =>
+                  patch({
+                    vatTreatment,
+                    // Under reverse charge or an exemption no line carries VAT.
+                    lines:
+                      vatTreatment === "standard"
+                        ? invoice.lines
+                        : invoice.lines.map((l) => ({ ...l, vatRate: 0 })),
+                  })
+                }
+                ariaLabel={t("editor.vatTreatment")}
+              />
+            </Field>
+            <p className="text-xs text-muted">{t("editor.vatTreatmentHint")}</p>
             <ToggleRow
               label={t("editor.roundTotal")}
               hint={t("editor.roundTotalHint")}
@@ -591,6 +616,11 @@ export function InvoiceEditor({
           customer={customer}
           region={region}
           edits={edits}
+          creditOfNumber={
+            invoice.creditOf
+              ? (store.data.invoices[invoice.creditOf]?.number ?? null)
+              : null
+          }
           sections={sections}
           wrap={(id: SectionId, node) =>
             edits ? (

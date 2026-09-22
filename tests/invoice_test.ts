@@ -202,6 +202,18 @@ describe("a credit note", () => {
     expect(credit.lines[0]?.id).not.toBe("l1");
     expect(marked.status).toBe("credited");
   });
+
+  it("negates the VAT-in-kronor figure of a foreign-currency invoice", () => {
+    const original = invoice({
+      status: "sent",
+      number: 7,
+      currency: "EUR",
+      vatInBaseCurrency: 250,
+    });
+    expect(
+      creditInvoice(original, "2026-10-10", ctx()).credit.vatInBaseCurrency,
+    ).toBe(-250);
+  });
 });
 
 describe("formatMoney", () => {

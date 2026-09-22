@@ -36,6 +36,8 @@ export function company(overrides: Partial<Company> = {}): Company {
       vatNumber: "SE556036079301",
       fSkatt: "yes",
       bankgiro: "5050-1055",
+      companyForm: "ab",
+      seat: "Stockholm",
     },
     region: "se",
     firstInvoiceNumber: 1000,
@@ -102,6 +104,8 @@ export function invoice(overrides: Partial<Invoice> = {}): Invoice {
     buyer: null,
     creditOf: null,
     roundTotal: true,
+    vatTreatment: "standard",
+    vatInBaseCurrency: null,
     updatedAt: "2026-09-30T08:00:00.000Z",
     ...overrides,
   };

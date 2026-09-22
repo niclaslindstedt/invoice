@@ -127,6 +127,14 @@ export const sv: Catalog = {
     currency: "Valuta",
     roundTotal: "Avrunda summan till hela kronor",
     roundTotalHint: "Skillnaden skrivs ut som en egen rad.",
+    vatTreatment: "Moms",
+    vatTreatments: {
+      standard: "Debiteras",
+      reverseCharge: "Omvänd",
+      exempt: "Undantag",
+    },
+    vatTreatmentHint:
+      "Omvänd betalningsskyldighet vid byggtjänster mellan momsregistrerade företag och tjänster till företag utomlands: köparens momsregistreringsnummer skrivs på fakturan och varje rad har 0 %.",
     lines: "Rader",
     addLine: "Lägg till rad",
     removeLine: "Ta bort rad",
@@ -195,6 +203,7 @@ export const sv: Catalog = {
     vatAt: "Moms {rate}%",
     vatOn: "på {base}",
     rounding: "Öresavrundning",
+    vatInCurrency: "Moms i {currency}",
     total: "Att betala",
     payment: "Betalning",
     payBy: "Vänligen betala {total} senast {date}.",

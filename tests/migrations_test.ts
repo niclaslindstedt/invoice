@@ -59,6 +59,8 @@ describe("the document pipeline", () => {
     expect(doc.invoices.good?.status).toBe("draft");
     expect(doc.invoices.good?.lines[0]?.quantity).toBe(2);
     expect(doc.invoices.good?.currency).toBe("SEK");
+    expect(doc.invoices.good?.vatTreatment).toBe("standard");
+    expect(doc.invoices.good?.vatInBaseCurrency).toBeNull();
     expect(doc.templates.t?.dueDays).toBe(14);
     expect(doc.revisions.a).toHaveLength(1);
     expect(doc.revisions.a?.[0]?.data.name).toBe("Old");

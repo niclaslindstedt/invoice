@@ -19,8 +19,25 @@
 // and 0 % (exempt or reverse-charged). Öre rounding of the total to a whole
 // krona is customary rather than mandatory, printed as its own line so the
 // VAT still reconciles.
+//
+// Three more rules from the same sources, each checked below. Under reverse
+// charge (omvänd betalningsskyldighet — building services between
+// VAT-registered companies, services to businesses abroad) the buyer's VAT
+// number goes on the invoice and the page says "Omvänd betalningsskyldighet";
+// an exempt supply cites the exemption. An invoice in a currency other than
+// kronor must state the VAT in kronor as well. And the seat is the Companies
+// Act's, so it is required of a limited company and of nobody else — which
+// is why the company form is a field here.
+//
+// What the law does not require but every Swedish invoice carries: payment
+// terms ("30 dagar netto"), and the late-payment lines that only bind when
+// they are printed — interest under the Interest Act at the reference rate
+// plus eight points, the 450 kr late fee a business debtor owes without a
+// reminder, and the 60 kr reminder fee. See docs/regions.md for the sources.
 
-import type { Region, RegionIssue } from "../index.ts";
+import { daysBetween } from "@niclaslindstedt/oss-framework/calendar";
+
+import type { Region, RegionIssue, RegionNotice } from "../index.ts";
 import { fieldIssues } from "../index.ts";
 import { strings } from "./strings.ts";
 
@@ -137,13 +154,22 @@ export const se: Region = {
       validate: validOrgNumber,
     },
     {
+      // The buyer's is required only under reverse charge; `check` says so.
       id: "vatNumber",
-      party: "seller",
+      party: "both",
       required: true,
       placement: "party",
       kind: "text",
       normalize: normalizeVatNumber,
       validate: validVatNumber,
+    },
+    {
+      id: "companyForm",
+      party: "seller",
+      required: false,
+      placement: "none",
+      kind: "choice",
+      choices: ["ab", "sole", "hb", "other"],
     },
     {
       id: "seat",
@@ -205,12 +231,39 @@ export const se: Region = {
       kind: "text",
       inputMode: "numeric",
     },
+    {
+      id: "lateFee",
+      party: "seller",
+      required: false,
+      placement: "payment",
+      kind: "flag",
+    },
+    {
+      id: "reminderFee",
+      party: "seller",
+      required: false,
+      placement: "payment",
+      kind: "flag",
+    },
   ],
   notices: (seller) => {
-    const out = [];
+    const out: RegionNotice[] = [];
     if (seller.details.fSkatt === "yes") out.push({ key: "fSkatt" });
     if (seller.details.seat) out.push({ key: "seat" });
     out.push({ key: "lateInterest" });
+    if (seller.details.lateFee === "yes") out.push({ key: "lateFee" });
+    if (seller.details.reminderFee === "yes") out.push({ key: "reminderFee" });
+    return out;
+  },
+  invoiceNotices: (invoice) => {
+    const out: RegionNotice[] = [];
+    if (invoice.issueDate && invoice.dueDate) {
+      const days = daysBetween(invoice.issueDate, invoice.dueDate);
+      if (days >= 0) out.push({ key: "terms", params: { days: String(days) } });
+    }
+    if (invoice.vatTreatment === "reverseCharge")
+      out.push({ key: "reverseCharge" });
+    if (invoice.vatTreatment === "exempt") out.push({ key: "exempt" });
     return out;
   },
   check: (invoice, seller, buyer, totals) => {
@@ -224,13 +277,39 @@ export const se: Region = {
       issues.push({ key: "buyerAddress" });
     }
     issues.push(...fieldIssues(se, "seller", seller.details));
-    // A private customer has no organisation number; only a malformed one
-    // is an issue on the buyer's side.
+    // The Companies Act asks the seat of a limited company and of nobody
+    // else.
+    if (seller.details.companyForm === "ab" && !seller.details.seat) {
+      issues.push({ key: "missing", party: "seller", field: "seat" });
+    }
+    // A private customer has no organisation number and no VAT number; only
+    // a malformed one is an issue on the buyer's side — except under reverse
+    // charge, where the buyer's VAT number is what makes the invoice one.
     issues.push(
       ...fieldIssues(se, "buyer", buyer.details).filter(
         (i) => i.key !== "missing",
       ),
     );
+    if (invoice.vatTreatment === "reverseCharge" && !buyer.details.vatNumber) {
+      issues.push({
+        key: "buyerVatNumber",
+        party: "buyer",
+        field: "vatNumber",
+      });
+    }
+    if (
+      invoice.vatTreatment !== "standard" &&
+      invoice.lines.some((l) => l.vatRate !== 0)
+    ) {
+      issues.push({ key: "noVatUnderTreatment" });
+    }
+    if (
+      invoice.currency !== se.currency &&
+      totals.vatTotal !== 0 &&
+      invoice.vatInBaseCurrency === null
+    ) {
+      issues.push({ key: "vatInSek" });
+    }
     if (!invoice.issueDate) issues.push({ key: "noIssueDate" });
     if (!invoice.dueDate) issues.push({ key: "noDueDate" });
     if (invoice.lines.length === 0) issues.push({ key: "noLines" });

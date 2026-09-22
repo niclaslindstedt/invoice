@@ -29,11 +29,15 @@ export type RegionField = {
   party: "seller" | "buyer" | "both";
   /** Whether the party may not be invoiced without it. */
   required: boolean;
-  /** Where the page prints it: with the party's name and address, or in the
-   *  payment block — a giro number is how to pay, not who is paying. */
-  placement: "party" | "payment";
-  /** A `yes` / `no` field rather than free text. */
-  kind: "text" | "flag";
+  /** Where the page prints it: with the party's name and address, in the
+   *  payment block — a giro number is how to pay, not who is paying — or
+   *  nowhere, for a fact the region needs but the page does not show. */
+  placement: "party" | "payment" | "none";
+  /** A `yes` / `no` field, one of a fixed set of values, or free text. */
+  kind: "text" | "flag" | "choice";
+  /** The values a `choice` field may take; labelled by the region's
+   *  `choices` strings. */
+  choices?: string[];
   /** The soft keyboard a phone should open for it. */
   inputMode?: "text" | "numeric" | "email" | "url";
   /** Tidy a typed value into its canonical form (spacing, a dash). */
@@ -51,8 +55,8 @@ export type RegionIssue = {
 };
 
 /** A line the region prints on the page that nobody typed — a legal notice,
- *  a note on late payment. */
-export type RegionNotice = { key: string };
+ *  a note on late payment. `params` fill the string's placeholders. */
+export type RegionNotice = { key: string; params?: Record<string, string> };
 
 export type Region = {
   id: RegionId;
@@ -70,6 +74,13 @@ export type Region = {
   roundTotal: boolean;
   /** The lines printed under the payment block for this seller. */
   notices: (seller: Party) => RegionNotice[];
+  /** The lines printed with the totals for this invoice — the VAT
+   *  treatment's own words, the payment terms. */
+  invoiceNotices: (
+    invoice: Invoice,
+    seller: Party,
+    buyer: Party,
+  ) => RegionNotice[];
   /** What still stands between this invoice and one that may be sent. */
   check: (
     invoice: Invoice,
@@ -86,6 +97,8 @@ export type Region = {
 export type RegionStrings = {
   name: string;
   fields: Record<string, string>;
+  /** The labels of a `choice` field's values, keyed by field id. */
+  choices: Record<string, Record<string, string>>;
   issues: Record<string, string>;
   notices: Record<string, string>;
 };
@@ -127,7 +140,11 @@ export function normalizeDetails(
     const raw = details[field.id];
     if (typeof raw !== "string") continue;
     const value = (field.normalize ?? ((v: string) => v.trim()))(raw);
-    if (value) out[field.id] = value;
+    if (!value) continue;
+    if (field.kind === "choice" && !(field.choices ?? []).includes(value)) {
+      continue;
+    }
+    out[field.id] = value;
   }
   return out;
 }

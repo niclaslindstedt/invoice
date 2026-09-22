@@ -32,8 +32,12 @@ created, sent, paid — is written under it.
 Everything a country requires of an invoice lives in a **region**. Sweden is
 the first: the organisation and VAT numbers with their check digits, the
 "Godkänd för F-skatt" line, bankgiro and plusgiro, the 25 / 12 / 6 / 0 % VAT
-rates, öre rounding, and a check that says what still stands between a draft
-and one that may be sent. A second region is a folder.
+rates, reverse charge and exemptions, VAT in kronor on a foreign-currency
+invoice, the seat a limited company must print, öre rounding, the payment
+terms and late-fee lines every Swedish invoice carries, and a check that says
+what still stands between a draft and one that may be sent — each rule traced
+to its source in [`docs/regions.md`](docs/regions.md). A second region is a
+folder.
 
 It is a companion to the [Time](https://github.com/niclaslindstedt/time)
 app: a month of hours exported there drops onto an invoice here as lines, at

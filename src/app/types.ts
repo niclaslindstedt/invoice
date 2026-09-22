@@ -137,6 +137,23 @@ export type InvoiceLayout = {
   paper: PaperId;
 };
 
+/**
+ * How VAT is handled on an invoice.
+ *
+ *   standard      — the seller charges VAT at each line's rate
+ *   reverseCharge — the buyer accounts for the VAT (building services between
+ *                   VAT-registered companies, services to businesses abroad);
+ *                   every line is at 0 % and the page says so
+ *   exempt        — the supply is exempt or zero-rated and the page cites it
+ */
+export type VatTreatment = "standard" | "reverseCharge" | "exempt";
+
+export const VAT_TREATMENTS: VatTreatment[] = [
+  "standard",
+  "reverseCharge",
+  "exempt",
+];
+
 export type Invoice = {
   id: string;
   /** The number in the series, assigned when sent; null while a draft. */
@@ -166,6 +183,11 @@ export type Invoice = {
   /** Whether the total is rounded to a whole unit of currency, with the
    *  difference printed as its own line — Sweden's öresavrundning. */
   roundTotal: boolean;
+  vatTreatment: VatTreatment;
+  /** The VAT amount in the region's own currency, for an invoice written in
+   *  another one — Sweden requires the VAT stated in kronor as well. Null
+   *  when the invoice is in the region's currency, or not yet given. */
+  vatInBaseCurrency: number | null;
   updatedAt: string;
 };
 

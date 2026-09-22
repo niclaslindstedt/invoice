@@ -18,6 +18,7 @@ import type { Revision } from "./revisions.ts";
 import {
   DOC_VERSION,
   INVOICE_STATUSES,
+  VAT_TREATMENTS,
   type Address,
   type AppData,
   type Company,
@@ -28,6 +29,7 @@ import {
   type InvoiceStatus,
   type Party,
   type Template,
+  type VatTreatment,
 } from "./types.ts";
 
 const migrator = createMigrator({
@@ -204,6 +206,13 @@ function readInvoice(
     buyer: raw.buyer ? readParty(raw.buyer, region) : null,
     creditOf: str(raw.creditOf) || null,
     roundTotal: bool(raw.roundTotal, true),
+    vatTreatment: VAT_TREATMENTS.includes(raw.vatTreatment as VatTreatment)
+      ? (raw.vatTreatment as VatTreatment)
+      : "standard",
+    vatInBaseCurrency:
+      raw.vatInBaseCurrency === null || raw.vatInBaseCurrency === undefined
+        ? null
+        : num(raw.vatInBaseCurrency, 0),
     updatedAt: stamp(raw.updatedAt),
   };
 }

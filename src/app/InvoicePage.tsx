@@ -42,6 +42,9 @@ type Props = {
   region: Region;
   /** Non-null in the edit mode: what an edit on the page does. */
   edits: PageEdits | null;
+  /** The number of the invoice this one credits, when it is a credit note
+   *  and the original has one. The page prints the number, never the id. */
+  creditOfNumber: number | null;
   /** Draw one section; the editor wraps each in its frame. */
   wrap: (id: SectionId, node: React.ReactNode) => React.ReactNode;
   sections: SectionId[];
@@ -54,6 +57,7 @@ export function InvoicePage({
   customer,
   region,
   edits,
+  creditOfNumber,
   wrap,
   sections,
 }: Props) {
@@ -103,7 +107,8 @@ export function InvoicePage({
               {isCredit && (
                 <div className="text-sm" style={{ color: "var(--page-muted)" }}>
                   {t("page.creditOf", {
-                    number: String(creditOfNumber(invoice)),
+                    number:
+                      creditOfNumber === null ? "—" : String(creditOfNumber),
                   })}
                 </div>
               )}
@@ -265,6 +270,49 @@ export function InvoicePage({
               <span>{t("page.total")}</span>
               <span className="tabular-nums">{money(totals.total)}</span>
             </div>
+            {invoice.currency !== region.currency &&
+              (invoice.vatInBaseCurrency !== null || edits) && (
+                <div className="mt-1 flex items-baseline justify-between gap-4 py-0.5">
+                  <span style={{ color: "var(--page-muted)" }}>
+                    {t("page.vatInCurrency", { currency: region.currency })}
+                  </span>
+                  <span className="tabular-nums">
+                    {edits ? (
+                      <PageText
+                        value={
+                          invoice.vatInBaseCurrency === null
+                            ? ""
+                            : String(invoice.vatInBaseCurrency)
+                        }
+                        type="number"
+                        align="right"
+                        className="w-24"
+                        onCommit={(v) =>
+                          edits.invoice({
+                            vatInBaseCurrency:
+                              v.trim() === ""
+                                ? null
+                                : Number(v.replace(",", ".")) || 0,
+                          })
+                        }
+                      />
+                    ) : (
+                      formatMoney(
+                        invoice.vatInBaseCurrency ?? 0,
+                        region.currency,
+                        locale,
+                      )
+                    )}
+                  </span>
+                </div>
+              )}
+            <ul className="mt-2 text-xs" style={{ color: "var(--page-muted)" }}>
+              {region.invoiceNotices(invoice, seller, buyer).map((n) => (
+                <li key={n.key}>
+                  {noticeLabel(region, lang, n, seller.details)}
+                </li>
+              ))}
+            </ul>
           </div>
         );
       case "payment":
@@ -365,10 +413,6 @@ export function InvoicePage({
       ))}
     </div>
   );
-}
-
-function creditOfNumber(invoice: Invoice): string {
-  return invoice.creditOf ?? "";
 }
 
 function addressLine(party: Party): string {

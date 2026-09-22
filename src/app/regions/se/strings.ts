@@ -17,10 +17,26 @@ const en: RegionStrings = {
     iban: "IBAN",
     bic: "BIC",
     ocr: "OCR / payment reference",
+    companyForm: "Company form",
+    lateFee: "Charge the 450 kr late fee (business customers)",
+    reminderFee: "Charge a 60 kr reminder fee",
+  },
+  choices: {
+    companyForm: {
+      ab: "Limited company (AB)",
+      sole: "Sole trader (enskild firma)",
+      hb: "Partnership (HB / KB)",
+      other: "Other",
+    },
   },
   issues: {
     missing: "{field} is missing",
     invalid: "{field} does not look right",
+    buyerVatNumber:
+      "Under reverse charge the buyer's VAT number must be on the invoice",
+    noVatUnderTreatment:
+      "Under reverse charge or an exemption every line must be at 0 % VAT",
+    vatInSek: "An invoice in another currency must also state the VAT in SEK",
     noNumber: "The invoice has no number",
     noIssueDate: "The invoice has no date",
     noDueDate: "The invoice has no due date",
@@ -36,8 +52,15 @@ const en: RegionStrings = {
   notices: {
     fSkatt: "Godkänd för F-skatt",
     lateInterest:
-      "Interest on late payment is charged under the Swedish Interest Act",
+      "Interest on late payment is charged under the Swedish Interest Act (the reference rate plus 8 percentage points)",
+    lateFee:
+      "A late-payment fee of SEK 450 is charged on overdue invoices to businesses",
+    reminderFee: "A reminder fee of SEK 60 is charged per reminder",
     seat: "Registered office: {seat}",
+    terms: "Payment terms: {days} days net",
+    reverseCharge:
+      "Omvänd betalningsskyldighet — reverse charge, the buyer accounts for the VAT",
+    exempt: "Undantagen från skatteplikt — exempt from VAT",
   },
 };
 
@@ -53,10 +76,26 @@ const sv: RegionStrings = {
     iban: "IBAN",
     bic: "BIC",
     ocr: "OCR / betalningsreferens",
+    companyForm: "Företagsform",
+    lateFee: "Ta ut förseningsersättning 450 kr (näringsidkare)",
+    reminderFee: "Ta ut påminnelseavgift 60 kr",
+  },
+  choices: {
+    companyForm: {
+      ab: "Aktiebolag",
+      sole: "Enskild firma",
+      hb: "Handelsbolag / kommanditbolag",
+      other: "Annan",
+    },
   },
   issues: {
     missing: "{field} saknas",
     invalid: "{field} ser inte rätt ut",
+    buyerVatNumber:
+      "Vid omvänd betalningsskyldighet ska köparens momsregistreringsnummer stå på fakturan",
+    noVatUnderTreatment:
+      "Vid omvänd betalningsskyldighet eller undantag ska varje rad ha 0 % moms",
+    vatInSek: "En faktura i annan valuta ska även ange momsbeloppet i SEK",
     noNumber: "Fakturan saknar nummer",
     noIssueDate: "Fakturan saknar datum",
     noDueDate: "Fakturan saknar förfallodatum",
@@ -71,8 +110,15 @@ const sv: RegionStrings = {
   },
   notices: {
     fSkatt: "Godkänd för F-skatt",
-    lateInterest: "Dröjsmålsränta debiteras enligt räntelagen",
+    lateInterest:
+      "Dröjsmålsränta debiteras enligt räntelagen (referensräntan + 8 procentenheter)",
+    lateFee:
+      "Vid försenad betalning debiteras förseningsersättning 450 kr (näringsidkare)",
+    reminderFee: "Påminnelseavgift 60 kr debiteras per påminnelse",
     seat: "Säte: {seat}",
+    terms: "Betalningsvillkor: {days} dagar netto",
+    reverseCharge: "Omvänd betalningsskyldighet",
+    exempt: "Undantagen från skatteplikt",
   },
 };
 

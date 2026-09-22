@@ -34,11 +34,34 @@ describe("the registry", () => {
       const words = se.strings[lang];
       for (const field of se.fields)
         expect(words.fields[field.id]).toBeTruthy();
-      for (const key of ["missing", "invalid", "noPayment", "noLines"]) {
+      for (const key of [
+        "missing",
+        "invalid",
+        "noPayment",
+        "noLines",
+        "buyerVatNumber",
+        "noVatUnderTreatment",
+        "vatInSek",
+      ]) {
         expect(words.issues[key]).toBeTruthy();
       }
-      for (const key of ["fSkatt", "seat", "lateInterest"]) {
+      for (const key of [
+        "fSkatt",
+        "seat",
+        "lateInterest",
+        "lateFee",
+        "reminderFee",
+        "terms",
+        "reverseCharge",
+        "exempt",
+      ]) {
         expect(words.notices[key]).toBeTruthy();
+      }
+      for (const field of se.fields) {
+        if (field.kind !== "choice") continue;
+        for (const value of field.choices ?? []) {
+          expect(words.choices[field.id]?.[value]).toBeTruthy();
+        }
       }
     }
   });
@@ -101,7 +124,10 @@ describe("Swedish identifiers", () => {
 
 describe("the fields", () => {
   it("are the seller's, the buyer's or both", () => {
-    expect(fieldsFor(se, "buyer").map((f) => f.id)).toEqual(["orgNumber"]);
+    expect(fieldsFor(se, "buyer").map((f) => f.id)).toEqual([
+      "orgNumber",
+      "vatNumber",
+    ]);
     expect(fieldsFor(se, "seller").map((f) => f.id)).toContain("vatNumber");
     expect(fieldsFor(se, "seller").map((f) => f.id)).toContain("bankgiro");
   });
@@ -181,15 +207,92 @@ describe("the check", () => {
   it("prints the notices the seller's details call for", () => {
     expect(se.notices(seller).map((n) => n.key)).toEqual([
       "fSkatt",
+      "seat",
       "lateInterest",
+    ]);
+    const fees = { ...seller.details, lateFee: "yes", reminderFee: "yes" };
+    expect(se.notices({ ...seller, details: fees }).map((n) => n.key)).toEqual([
+      "fSkatt",
+      "seat",
+      "lateInterest",
+      "lateFee",
+      "reminderFee",
+    ]);
+  });
+
+  it("wants the seat of a limited company and of nobody else", () => {
+    const inv = invoice();
+    const noSeat = { ...seller.details };
+    delete noSeat.seat;
+    expect(
+      se.check(inv, { ...seller, details: noSeat }, buyer, invoiceTotals(inv)),
+    ).toEqual([{ key: "missing", party: "seller", field: "seat" }]);
+    expect(
+      se.check(
+        inv,
+        { ...seller, details: { ...noSeat, companyForm: "sole" } },
+        buyer,
+        invoiceTotals(inv),
+      ),
+    ).toEqual([]);
+  });
+
+  it("under reverse charge wants the buyer's VAT number and no VAT on the lines", () => {
+    const reversed = invoice({
+      vatTreatment: "reverseCharge",
+      lines: [line({ vatRate: 0 })],
+    });
+    expect(se.check(reversed, seller, buyer, invoiceTotals(reversed))).toEqual([
+      { key: "buyerVatNumber", party: "buyer", field: "vatNumber" },
+    ]);
+    const registered = {
+      ...buyer,
+      details: { ...buyer.details, vatNumber: "SE556036079301" },
+    };
+    expect(
+      se.check(reversed, seller, registered, invoiceTotals(reversed)),
+    ).toEqual([]);
+    const withVat = invoice({ vatTreatment: "reverseCharge" });
+    expect(
+      se
+        .check(withVat, seller, registered, invoiceTotals(withVat))
+        .map((i) => i.key),
+    ).toEqual(["noVatUnderTreatment"]);
+  });
+
+  it("wants the VAT in kronor on an invoice in another currency", () => {
+    const eur = invoice({ currency: "EUR" });
+    expect(se.check(eur, seller, buyer, invoiceTotals(eur))).toEqual([
+      { key: "vatInSek" },
+    ]);
+    const stated = invoice({ currency: "EUR", vatInBaseCurrency: 25000 });
+    expect(se.check(stated, seller, buyer, invoiceTotals(stated))).toEqual([]);
+  });
+
+  it("prints the invoice's own notices: the terms and the VAT treatment", () => {
+    expect(se.invoiceNotices(invoice(), seller, buyer)).toEqual([
+      { key: "terms", params: { days: "30" } },
     ]);
     expect(
       se
-        .notices({
-          ...seller,
-          details: { ...seller.details, seat: "Stockholm" },
-        })
+        .invoiceNotices(
+          invoice({ vatTreatment: "reverseCharge" }),
+          seller,
+          buyer,
+        )
         .map((n) => n.key),
-    ).toEqual(["fSkatt", "seat", "lateInterest"]);
+    ).toEqual(["terms", "reverseCharge"]);
+    expect(
+      se
+        .invoiceNotices(invoice({ vatTreatment: "exempt" }), seller, buyer)
+        .map((n) => n.key),
+    ).toEqual(["terms", "exempt"]);
+  });
+
+  it("keeps only a known company form", () => {
+    expect(normalizeDetails(se, { companyForm: "ab" })).toEqual({
+      companyForm: "ab",
+    });
+    expect(normalizeDetails(se, { companyForm: "plc" })).toEqual({});
   });
 });

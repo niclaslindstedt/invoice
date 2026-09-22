@@ -1,11 +1,13 @@
 // SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0
 import {
+  Field,
   LabeledInput,
+  SelectPicker,
   ToggleRow,
 } from "@niclaslindstedt/oss-framework/components";
 
 import { useLang, useT } from "./i18n/index.ts";
-import { fieldLabel } from "./labels.ts";
+import { choiceLabel, fieldLabel } from "./labels.ts";
 import { fieldsFor, type Region, type RegionField } from "./regions/index.ts";
 import type { Party } from "./types.ts";
 
@@ -53,8 +55,10 @@ export function PartyForm({
     else delete details[id];
     onChange({ ...party, details });
   };
+  // A field the page never prints (`none`) is asked for with the party's
+  // own details.
   const fields = fieldsFor(region, side).filter((f) =>
-    placements.includes(f.placement),
+    placements.includes(f.placement === "none" ? "party" : f.placement),
   );
 
   return (
@@ -125,7 +129,22 @@ export function PartyForm({
         </>
       )}
       {fields.map((field) =>
-        field.kind === "flag" ? (
+        field.kind === "choice" ? (
+          <Field key={field.id} label={fieldLabel(region, lang, field.id)}>
+            <SelectPicker<string>
+              value={party.details[field.id] ?? ""}
+              options={[
+                { value: "", label: "—" },
+                ...(field.choices ?? []).map((value) => ({
+                  value,
+                  label: choiceLabel(region, lang, field.id, value),
+                })),
+              ]}
+              onChange={(v: string) => setDetail(field.id, v)}
+              ariaLabel={fieldLabel(region, lang, field.id)}
+            />
+          </Field>
+        ) : field.kind === "flag" ? (
           <ToggleRow
             key={field.id}
             label={fieldLabel(region, lang, field.id)}
